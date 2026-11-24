@@ -1,0 +1,7 @@
+{
+  "name": "acme-tools",
+  "owner": { "name": "Acme 研發效能小組" },
+  "plugins": [
+    { "name": "acme-team-kit", "source": "./plugins/acme-team-kit", "description": "Acme 團隊共用的 Skill 與安全 Hook" }
+  ]
+}

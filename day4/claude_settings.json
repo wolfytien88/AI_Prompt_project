@@ -1,0 +1,9 @@
+{
+  "permissions": { "deny": ["Read(./.env)", "Read(./.env.*)"] },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "python3 .claude/hooks/guard.py" }] }
+    ]
+  }
+}

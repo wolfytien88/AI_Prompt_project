@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "status": { "type": "string", "enum": ["pass", "fail", "infra_error"] },
+    "failed_tests": { "type": "array", "items": { "type": "string" } },
+    "root_cause": { "type": "string" },
+    "category": { "type": "string", "enum": ["code_bug", "flaky_test", "dependency", "environment", "none"] },
+    "suggested_owner": { "type": "string", "enum": ["backend", "frontend", "infra", "none"] },
+    "next_step": { "type": "string" }
+  },
+  "required": ["status", "failed_tests", "root_cause", "category", "suggested_owner", "next_step"],
+  "additionalProperties": false
+}

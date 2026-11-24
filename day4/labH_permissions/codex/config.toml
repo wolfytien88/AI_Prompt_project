@@ -1,0 +1,28 @@
+# 複製到 ~/.codex/config.toml，或用 CODEX_HOME=<練習資料夾>/.codex-home 隔離
+# 注意：TOML 的頂層設定要寫在第一個 [表格] 之前，否則會被歸到上一個表格裡
+
+# 自動審查（Approve for me）：審查者代替你回答沙箱邊界上的核准請求
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+
+# 權限設定檔（beta）：不要再同時寫 sandbox_mode，否則 Codex 會改回舊系統
+default_permissions = "lab"
+
+[permissions.lab]
+extends = ":workspace"            # 以內建的 :workspace 為基礎（可寫工作區、預設無網路）
+
+[permissions.lab.filesystem]
+glob_scan_max_depth = 3           # Linux 不原生支援 **，限制展開深度
+
+[permissions.lab.filesystem.":workspace_roots"]
+"**/*.env" = "deny"               # 0.165 實測：glob 要放在 :workspace_roots 底下
+
+[permissions.lab.network]
+enabled = true
+
+[permissions.lab.network.domains]
+"pypi.org" = "allow"
+"files.pythonhosted.org" = "allow"
+
+[features]
+network_proxy = true              # 沒有開 proxy，網域規則不會生效（網路變成全開）

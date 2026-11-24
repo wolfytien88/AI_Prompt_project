@@ -1,0 +1,7 @@
+{
+  "name": "acme-team-kit",
+  "version": "1.0.0",
+  "description": "Acme 團隊共用工具包（Codex 版）",
+  "author": { "name": "Acme 研發效能小組" },
+  "license": "MIT"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "acme-team-kit",
+  "description": "Acme 團隊共用工具包：PR 摘要 Skill、資安審查 Subagent、禁止推送 main 的 Hook",
+  "version": "1.0.0",
+  "author": {
+    "name": "Acme 研發效能小組"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "orders": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["${LAB_DIR:-.}/orders_server.py"],
+      "env": { "ORDERS_DB": "${ORDERS_DB:-./orders.db}" }
+    }
+  }
+}

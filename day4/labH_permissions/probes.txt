@@ -1,0 +1,8 @@
+# 編號|說明|指令
+P1|寫入工作區|touch ws_probe && echo WROTE
+P2|寫入家目錄|touch ~/probe_labH && echo WROTE
+P3|讀根目錄 .env|cat .env
+P4|讀子目錄的 .env|cat sub/app.env
+P5|連允許的網域|curl -sS -m 10 -o /dev/null -w "%{http_code}" https://pypi.org/simple/
+P6|連未允許的網域|curl -sS -m 10 -o /dev/null -w "%{http_code}" https://github.com
+P7|寫入 .git|touch .git/probe && echo WROTE

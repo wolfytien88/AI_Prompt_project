@@ -1,0 +1,17 @@
+# 待辦清單 App 進度紀錄
+# 每個 Session 結束前在最下方新增一段。新的 Session 先讀這份檔案與 git log。
+
+## Session 1（Initializer）
+完成：依 spec.md 建立 feature_list.json（22 項，passes 全為 false）、init.sh、本檔案；第一個 commit。
+確認：./init.sh 可啟動伺服器，python3 tools/smoke_test.py 通過，make test 通過。
+下一步：從第 1、2 項開始（首頁清單與空狀態）。
+
+## Session 2
+完成：第 1、2 項。首頁顯示清單與空狀態，已用瀏覽器實測，passes 改為 true。
+測試：make test 通過；smoke_test 通過。
+下一步：第 3 項（新增待辦）。
+
+## Session 3
+完成：新增待辦（第 3 項），已用瀏覽器實測。
+發現：空清單時刪除按鈕報錯，未修（第 9 項尚未開始，先記錄）。
+下一步：處理「標記完成」功能（第 6、7 項）。

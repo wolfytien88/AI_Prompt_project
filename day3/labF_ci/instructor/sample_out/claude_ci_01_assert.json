@@ -1,0 +1,11 @@
+{
+  "status": "fail",
+  "failed_tests": [
+    "tests/test_invoice.py::test_vat_rounding_half_up",
+    "tests/test_invoice.py::test_vat_zero_rated"
+  ],
+  "root_cause": "invoice_total 的金額計算（疑似 invoice 模組中的稅額／四捨五入處理）使用截斷而非四捨五入，導致 105×1.05 得 109 而非 110，且 vat=0 時 99×3 得 296 而非 297（疑似浮點誤差後被截斷）。",
+  "category": "code_bug",
+  "suggested_owner": "backend",
+  "next_step": "檢查 invoice_total 的實作，改用 decimal.Decimal 搭配 ROUND_HALF_UP（或先 round 再轉 int）取代 int() 截斷，修正後執行 python3 -m pytest -q tests/test_invoice.py 驗證。"
+}

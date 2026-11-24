@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "acme-tools": {
+      "source": { "source": "directory", "path": "/path/to/acme-marketplace" }
+    }
+  },
+  "enabledPlugins": {
+    "acme-team-kit@acme-tools": true
+  }
+}

@@ -1,0 +1,60 @@
+# Codex PR 審查（官方文件的兩段式寫法）
+#   review：唯讀權限，checkout PR 的 merge commit，codex exec 產生審查結果
+#   post：只有這個 job 有 pull-requests: write，負責把結果貼到 PR
+# 需要：repo secret OPENAI_API_KEY
+name: Codex PR review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      final_message: ${{ steps.codex.outputs.final-message }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          fetch-depth: 0
+
+      - name: Fetch base for diff
+        run: git fetch --no-tags origin ${{ github.event.pull_request.base.ref }}
+
+      # Codex 放在 job 的最後一步：之後不再執行 repo 內的程式
+      - id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/prompts/review.md
+          sandbox: read-only
+          safety-strategy: drop-sudo
+          codex-args: --output-schema .github/codex/review_schema.json
+
+  post:
+    needs: review
+    if: needs.review.outputs.final_message != ''
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          REVIEW: ${{ needs.review.outputs.final_message }}
+        with:
+          script: |
+            const r = JSON.parse(process.env.REVIEW);
+            const lines = r.findings.length
+              ? r.findings.map(f => `- **${f.priority}** \`${f.file}:${f.line}\` ${f.summary}`)
+              : ["未發現 P0/P1 問題"];
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: ["### Codex 審查", ...lines].join("\n"),
+            });

@@ -1,0 +1,7 @@
+# codex plugin marketplace add / codex plugin add 會寫進 ~/.codex/config.toml 的內容（0.165 實測）
+[marketplaces.acme-tools]
+source_type = "local"
+source = "/path/to/acme-marketplace"
+
+[plugins."acme-team-kit@acme-tools"]
+enabled = true

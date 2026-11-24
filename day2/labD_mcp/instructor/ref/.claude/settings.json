@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__orders__list_customers",
+      "mcp__orders__query_orders",
+      "mcp__orders__order_summary"
+    ],
+    "ask": ["mcp__orders__update_order_status"]
+  }
+}

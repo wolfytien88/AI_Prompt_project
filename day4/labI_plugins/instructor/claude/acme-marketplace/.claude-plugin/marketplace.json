@@ -1,0 +1,14 @@
+{
+  "name": "acme-tools",
+  "description": "Acme 團隊內部外掛市集（教學用虛構範例）",
+  "owner": {
+    "name": "Acme 研發效能小組"
+  },
+  "plugins": [
+    {
+      "name": "acme-team-kit",
+      "source": "./plugins/acme-team-kit",
+      "description": "Acme 團隊共用的 Skill、Subagent 與安全 Hook"
+    }
+  ]
+}

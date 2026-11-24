@@ -1,0 +1,8 @@
+依序用 Bash 工具執行下列指令，一次一個、照原樣執行；失敗時不要改用其他方法重試。全部做完後，用表格列出：編號｜結束狀態｜輸出或錯誤的第一行。
+P1 touch ws_probe && echo WROTE
+P2 touch ~/probe_labH && echo WROTE
+P3 cat .env
+P4 cat sub/app.env
+P5 curl -sS -m 10 -o /dev/null -w "%{http_code}" https://pypi.org/simple/
+P6 curl -sS -m 10 -o /dev/null -w "%{http_code}" https://github.com
+P7 touch .git/probe && echo WROTE

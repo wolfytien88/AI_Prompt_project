@@ -1,0 +1,170 @@
+diff --git a/docs/architecture.md b/docs/architecture.md
+index c0c9480..d72773b 100644
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -25,6 +25,7 @@ service 層不可 import ui 層，由 `make lint`（tools/check_layers.py）檢
+ | --- | --- | --- |
+ | GET | /api/health | 健康檢查，回傳 {"status": "ok"} |
+ | GET | /api/todos | 回傳全部待辦（JSON 陣列） |
++| POST | /api/todos | 建立待辦，body `{"title": "..."}`（去頭尾空白後 1–100 字）；成功 201 回新項目，不合法 400 `{"error": "原因"}` |
+ 
+ 其他 API 依 spec.md 與 feature_list.json 逐項新增，新增後更新此表。
+ 
+diff --git a/src/service/todo_service.py b/src/service/todo_service.py
+index e573e6b..ee55328 100644
+--- a/src/service/todo_service.py
++++ b/src/service/todo_service.py
+@@ -2,7 +2,7 @@
+ from typing import List
+ 
+ from src.repo.todo_repo import JsonTodoRepo
+-from src.types.todo import Todo
++from src.types.todo import Todo, validate_title
+ 
+ 
+ class TodoService:
+@@ -12,5 +12,16 @@ class TodoService:
+     def list_todos(self) -> List[Todo]:
+         return self.repo.load()
+ 
++    def add_todo(self, title) -> Todo:
++        """新增待辦；標題不合法時拋出 ValueError（訊息即錯誤原因）。"""
++        error = validate_title(title)
++        if error:
++            raise ValueError(error)
++        todos = self.repo.load()
++        todo = Todo(id=max((t.id for t in todos), default=0) + 1, title=title.strip())
++        todos.append(todo)
++        self.repo.save(todos)
++        return todo
++
+     # 以下功能尚未實作，由 Coding Agent 依 feature_list.json 逐項完成：
+     # 新增、標記完成、刪除、編輯、篩選、清除已完成、截止日期……
+diff --git a/src/types/todo.py b/src/types/todo.py
+index 0bbc670..22e5c07 100644
+--- a/src/types/todo.py
++++ b/src/types/todo.py
+@@ -2,7 +2,7 @@
+ from dataclasses import dataclass, asdict
+ from typing import Optional
+ 
+-MAX_TITLE_LENGTH = 200
++MAX_TITLE_LENGTH = 100
+ 
+ 
+ @dataclass
+diff --git a/src/ui/server.py b/src/ui/server.py
+index a234a9a..fa5098c 100644
+--- a/src/ui/server.py
++++ b/src/ui/server.py
+@@ -30,6 +30,26 @@ class Handler(BaseHTTPRequestHandler):
+         self.end_headers()
+         self.wfile.write(body)
+ 
++    def do_POST(self):
++        if self.path != "/api/todos":
++            self.send_json(404, {"error": "找不到路徑"})
++            return
++        try:
++            length = int(self.headers.get("Content-Length", 0))
++            data = json.loads(self.rfile.read(length).decode("utf-8"))
++        except (ValueError, UnicodeDecodeError):
++            self.send_json(400, {"error": "請求內容必須是 JSON"})
++            return
++        if not isinstance(data, dict):
++            self.send_json(400, {"error": "請求內容必須是 JSON 物件"})
++            return
++        try:
++            todo = service.add_todo(data.get("title"))
++        except ValueError as e:
++            self.send_json(400, {"error": str(e)})
++            return
++        self.send_json(201, todo.to_dict())
++
+     def do_GET(self):
+         if self.path == "/api/health":
+             self.send_json(200, {"status": "ok"})
+diff --git a/tests/test_basics.py b/tests/test_basics.py
+index 1949137..494e4b5 100644
+--- a/tests/test_basics.py
++++ b/tests/test_basics.py
+@@ -1,4 +1,9 @@
++import json
+ import tempfile
++import threading
++import urllib.error
++import urllib.request
++from http.server import ThreadingHTTPServer
+ import unittest
+ import pathlib
+ 
+@@ -33,6 +38,69 @@ class TestRepoAndService(unittest.TestCase):
+         self.assertEqual(loaded[0].title, "寫報告")
+         self.assertEqual(loaded[0].due, "2026-12-31")
+ 
++    def test_add_todo_assigns_id_trims_and_persists(self):
++        svc = TodoService(self.repo)
++        first = svc.add_todo("  買牛奶  ")
++        second = svc.add_todo("寫報告")
++        self.assertEqual((first.id, first.title, first.done), (1, "買牛奶", False))
++        self.assertEqual(second.id, 2)
++        self.assertEqual([t.title for t in self.repo.load()], ["買牛奶", "寫報告"])
++
++    def test_add_todo_rejects_invalid_title(self):
++        svc = TodoService(self.repo)
++        for bad in ["", "   ", None, 123, "字" * 101]:
++            with self.assertRaises(ValueError):
++                svc.add_todo(bad)
++        self.assertEqual(svc.list_todos(), [])
++
++    def test_add_todo_length_boundaries(self):
++        svc = TodoService(self.repo)
++        self.assertEqual(len(svc.add_todo("字" * 100).title), 100)
++        self.assertEqual(svc.add_todo(" a ").title, "a")
++
++
++class TestPostTodosApi(unittest.TestCase):
++    def setUp(self):
++        from src.ui import server
++        self.tmp = tempfile.TemporaryDirectory()
++        self.server_mod = server
++        self.orig_service = server.service
++        server.service = TodoService(JsonTodoRepo(str(pathlib.Path(self.tmp.name) / "t.json")))
++        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
++        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
++        self.base = f"http://127.0.0.1:{self.httpd.server_address[1]}"
++
++    def tearDown(self):
++        self.httpd.shutdown()
++        self.httpd.server_close()
++        self.server_mod.service = self.orig_service
++        self.tmp.cleanup()
++
++    def post(self, raw: bytes):
++        req = urllib.request.Request(
++            self.base + "/api/todos", data=raw, method="POST",
++            headers={"Content-Type": "application/json"})
++        try:
++            with urllib.request.urlopen(req) as resp:
++                return resp.status, json.loads(resp.read())
++        except urllib.error.HTTPError as e:
++            return e.code, json.loads(e.read())
++
++    def test_create_returns_201(self):
++        status, body = self.post(json.dumps({"title": " 買牛奶 "}, ensure_ascii=False).encode())
++        self.assertEqual(status, 201)
++        self.assertEqual(body, {"id": 1, "title": "買牛奶", "done": False, "due": None})
++        with urllib.request.urlopen(self.base + "/api/todos") as resp:
++            self.assertEqual(len(json.loads(resp.read())), 1)
++
++    def test_invalid_returns_400_with_error(self):
++        for raw in [b'{"title": "   "}', b'{}', b'{"title": 5}',
++                    json.dumps({"title": "字" * 101}).encode(),
++                    b'not json', b'[]']:
++            status, body = self.post(raw)
++            self.assertEqual(status, 400, raw)
++            self.assertTrue(body["error"], raw)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()

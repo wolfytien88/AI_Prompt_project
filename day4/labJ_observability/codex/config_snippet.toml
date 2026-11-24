@@ -1,0 +1,7 @@
+# 加到 ~/.codex/config.toml（使用者層級；專案的 .codex/config.toml 不能設 notify）
+# 頂層設定要寫在第一個 [表格] 之前
+notify = ["python3", "/絕對路徑/labJ_observability/codex/notify.py"]
+
+[tui]
+notifications = ["agent-turn-complete", "approval-requested"]   # 也可以寫 true
+notification_method = "auto"                                      # auto｜osc9｜bel

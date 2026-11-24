@@ -1,0 +1,14 @@
+# 加到 ~/.codex/config.toml（或用 codex mcp add 產生前半段，再手動補上後半段）
+# 路徑請換成你的練習資料夾
+[mcp_servers.orders]
+command = "python3"
+args = ["/home/you/lab/orders-lab/orders_server.py"]
+enabled_tools = ["list_customers", "query_orders", "order_summary", "update_order_status"]
+default_tools_approval_mode = "auto"   # 唯讀工具自動執行
+startup_timeout_sec = 20
+
+[mcp_servers.orders.env]
+ORDERS_DB = "/home/you/lab/orders-lab/orders.db"
+
+[mcp_servers.orders.tools.update_order_status]
+approval_mode = "prompt"               # 寫入工具每次都要核准

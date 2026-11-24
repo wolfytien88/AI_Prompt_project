@@ -1,0 +1,1 @@
+{"type":"agent-turn-complete","thread-id":"thread-demo-001","turn-id":"turn-demo-001","cwd":"/home/student/labJ/repo","input-messages":["列出這個專案的檔案"],"last-assistant-message":"專案裡有 README.md 與 src/。"}

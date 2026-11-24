@@ -1,0 +1,12 @@
+# Codex 費用估算用的單價（美元／每百萬 token）。
+# 請依官方價目表或你的合約填寫；全部是 0 時，cost_log.py 只列 token、不估算費用。
+# 用 ChatGPT 方案登入時以方案額度計，不按 token 計費，這裡可保持 0。
+[codex.default]
+input = 0
+cached_input = 0
+output = 0
+
+# [codex."gpt-6.1-sol"]
+# input = 0
+# cached_input = 0
+# output = 0

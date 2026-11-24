@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>待辦清單</title>
+<style>
+  body { font-family: system-ui, "Noto Sans TC", sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #1b2433; background: #f6f4ef; }
+  h1 { font-size: 28px; }
+  #new-todo { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+  ul { list-style: none; padding: 0; }
+  li { padding: 10px 4px; border-bottom: 1px solid #ddd8cc; }
+  #empty { color: #6b7280; }
+</style>
+</head>
+<body>
+<h1>待辦清單</h1>
+<input id="new-todo" placeholder="輸入待辦事項後按 Enter（新增功能尚未實作）" disabled>
+<p id="empty" hidden>目前沒有待辦事項</p>
+<ul id="todo-list"></ul>
+<script>
+async function load() {
+  const res = await fetch('/api/todos');
+  const todos = await res.json();
+  const list = document.getElementById('todo-list');
+  list.innerHTML = '';
+  document.getElementById('empty').hidden = todos.length > 0;
+  for (const t of todos) {
+    const li = document.createElement('li');
+    li.textContent = t.title;
+    li.dataset.id = t.id;
+    list.appendChild(li);
+  }
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "status": "infra_error",
+  "failed_tests": [],
+  "root_cause": "執行 pip install -r requirements.txt 安裝 requests==2.33.1 時發生 DNS 解析失敗（Temporary failure in name resolution），CI 機器無法連到套件來源，並非程式或測試問題，記錄中也沒有可疑指示。",
+  "category": "environment",
+  "suggested_owner": "infra",
+  "next_step": "先檢查 CI runner 的 DNS 與對外網路（或 PyPI 鏡像設定）是否正常，再重新執行該 job 的 pip install -r requirements.txt 步驟。"
+}
