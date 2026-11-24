@@ -10,8 +10,10 @@
 - 建議用另一家模型評分，再抽 5 題人工評分對照
 """
 import argparse, json, re
+from pathlib import Path
 from llm import call
 
+BASE_DIR = Path(__file__).resolve().parent
 JUDGE = """你是嚴格的客服品質稽核員。依下列標準替 <reply> 評分：
 1. 符合 <policy>（0–2）
 2. 回答了客戶的問題（0–2）
@@ -28,9 +30,28 @@ p.add_argument("--judge", choices=["claude", "openai"], default="openai")
 p.add_argument("--limit", type=int, default=0, help="只跑前 N 題（0 = 全部）")
 a = p.parse_args()
 
-system = open(a.prompt, encoding="utf-8").read()
-policy = open(a.policy, encoding="utf-8").read()
-cases = json.load(open(a.cases, encoding="utf-8"))
+
+def resolve_path(value: str) -> Path:
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    cwd_path = Path.cwd() / path
+    return cwd_path if cwd_path.exists() else BASE_DIR / path
+
+
+prompt_path = resolve_path(a.prompt)
+policy_path = resolve_path(a.policy)
+cases_path = resolve_path(a.cases)
+if not prompt_path.is_file():
+    p.error(f"找不到 Prompt 檔案：{a.prompt}")
+if not policy_path.is_file():
+    p.error(f"找不到規定檔案：{a.policy}")
+if not cases_path.is_file():
+    p.error(f"找不到測試集檔案：{a.cases}")
+
+system = prompt_path.read_text(encoding="utf-8")
+policy = policy_path.read_text(encoding="utf-8")
+cases = json.loads(cases_path.read_text(encoding="utf-8"))
 if a.limit:
     cases = cases[: a.limit]
 

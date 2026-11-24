@@ -12,10 +12,12 @@
 - 比對前移除空白並把全形數字轉半形（「7 天」「7天」「７天」視為相同）
 - 支援 must_not_include：輸出中出現任一字串即判定失敗
 """
-import argparse, glob, json, os, time
+import argparse, json, time
+from pathlib import Path
 from llm import call
 
 FW = str.maketrans("０１２３４５６７８９", "0123456789")
+BASE_DIR = Path(__file__).resolve().parent
 
 
 def norm(s: str) -> str:
@@ -40,15 +42,16 @@ p.add_argument("--providers", default="claude,openai")
 p.add_argument("--runs", type=int, default=1)
 a = p.parse_args()
 
-prompts = sorted(glob.glob(f"prompts/{a.task}/v*.txt"))
-cases = json.load(open(f"cases/cases_{a.task}.json", encoding="utf-8"))
-providers = a.providers.split(",")
-os.makedirs("results", exist_ok=True)
+prompts = sorted((BASE_DIR / "prompts" / a.task).glob("v*.txt"))
+cases = json.loads((BASE_DIR / "cases" / f"cases_{a.task}.json").read_text(encoding="utf-8"))
+providers = [provider.strip() for provider in a.providers.split(",") if provider.strip()]
+results_dir = BASE_DIR / "results"
+results_dir.mkdir(parents=True, exist_ok=True)
 
 table, fails = {}, []
 for pf in prompts:
-    ver = os.path.basename(pf)[:-4]
-    system = open(pf, encoding="utf-8").read()
+    ver = pf.stem
+    system = pf.read_text(encoding="utf-8")
     for prov in providers:
         scores = []
         for run in range(a.runs):
@@ -70,15 +73,15 @@ n = len(cases)
 lines = [f"# 任務 {a.task} 比較結果（{time.strftime('%Y-%m-%d %H:%M')}）", "",
          "| 版本 | " + " | ".join(providers) + " |", "|---|" + "---|" * len(providers)]
 for pf in prompts:
-    ver = os.path.basename(pf)[:-4]
+    ver = pf.stem
     lines.append(f"| {ver} | " + " | ".join(
         "、".join(f"{s}/{n}" for s in table[(ver, p)]) for p in providers) + " |")
 tags = sorted({c.get("tag", "") for c in cases})
 lines += ["", "## 失敗明細", "", "| 版本 | 模型 | 第幾次 | 題號 | 類型 | 原因 | 輸出（前 300 字） |", "|---|---|---|---|---|---|---|"]
 for f in fails:
     lines.append("| " + " | ".join(str(x).replace("|", "／").replace("\n", " ") for x in f) + " |")
-path = f"results/{a.task}_{time.strftime('%Y%m%d_%H%M%S')}.md"
-open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+path = results_dir / f"{a.task}_{time.strftime('%Y%m%d_%H%M%S')}.md"
+path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("\n".join(lines[:4 + len(prompts)]))
 print(f"\n題目類型：{'、'.join(tags)}")
 print(f"失敗明細已寫入 {path}")
