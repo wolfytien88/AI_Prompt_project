@@ -6,7 +6,9 @@ description: 依 git 紀錄替指定版本寫更新紀錄，寫入 CHANGELOG.md�
 
 使用者會在 `$changelog` 後面寫新版本號，可能再加發布日期（沒給就用今天，格式 YYYY-MM-DD）。
 
-1. 執行 `bash .agents/skills/changelog/scripts/commits_since_tag.sh`，取得最新標籤與之後的 commit。
+1. 取得最新標籤與之後的 commit：
+   - macOS／Linux：執行 `bash .agents/skills/changelog/scripts/commits_since_tag.sh`。
+   - Windows：執行 `powershell -NoProfile -ExecutionPolicy Bypass -File .agents/skills/changelog/scripts/commits_since_tag.ps1`（不要用 `bash`，Windows 上的 `bash` 通常是 WSL）。
 2. 依 commit 前綴分組：feat →「新功能」、fix →「修正」、docs 與 test →「文件與測試」。沒有內容的組別不要寫。
 3. 每項一行，改寫成使用者看得懂的句子，不要照抄 commit 前綴。
 4. 把新段落插在 CHANGELOG.md 的「# 更新紀錄」標題下方、上一個版本之前，標題格式：`## <版本號>（<日期>）`。

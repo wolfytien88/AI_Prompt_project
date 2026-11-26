@@ -21,8 +21,20 @@
 | 項目 | 指令或說明 |
 | --- | --- |
 | Claude Code／Codex | 版本見 `../../README.md` |
-| 練習專案 | `bash make_repo.sh ~/lab/invoice-tool`：有 `v1.1.0` 標籤、之後 5 筆 commit，以及一筆尚未提交的修改（拿掉負數檢查、寫死測試金鑰） |
+| 練習專案 | macOS／Linux：`bash make_repo.sh ~/lab/invoice-tool`<br>Windows（PowerShell）：`powershell -ExecutionPolicy Bypass -File make_repo.ps1 $HOME\lab\invoice-tool`<br>有 `v1.1.0` 標籤、之後 5 筆 commit，以及一筆尚未提交的修改（拿掉負數檢查、寫死測試金鑰） |
 | 參考答案 | `instructor/ref/`（`.claude/skills/`、`.agents/skills/`） |
+
+### Windows 注意事項
+
+本實作在 Windows 上建議全程使用 **PowerShell**，下面的指令都能直接貼上執行。
+
+| 問題 | 原因與做法 |
+| --- | --- |
+| 在 PowerShell 執行 `bash make_repo.sh` 失敗或跑到 WSL | PowerShell 的 `bash` 通常是 `C:\Windows\system32\bash.exe`（WSL），不是 Git Bash。改用 `make_repo.ps1`。 |
+| 在 Git Bash 執行 `claude -p "/changelog …"`，Skill 沒有觸發、寫檔被拒 | Git Bash 會把開頭是 `/` 的參數當成路徑，改寫成 `C:/Program Files/Git/changelog`。先執行 `export MSYS_NO_PATHCONV=1`，或改用 PowerShell。 |
+| 複製參考答案 | PowerShell：`Copy-Item -Recurse -Force instructor\ref\* $HOME\lab\invoice-tool\`（`*` 會包含 `.claude`、`.agents` 隱藏資料夾）。檔案總管預設不顯示以 `.` 開頭的資料夾，可用 `Get-ChildItem -Force` 確認。 |
+| `` !`指令` `` 在 Windows 怎麼執行 | Claude Code 在 Windows 透過 Git Bash 執行這些指令，所以 `` !`git diff HEAD \|\| true` `` 這類 bash 語法照樣可用；前提是已安裝 Git for Windows。 |
+| 終端機中文亂碼 | 先執行 `chcp 65001`，或在 PowerShell 執行 `[Console]::OutputEncoding = [Text.Encoding]::UTF8`。只影響顯示，不影響檔案內容。 |
 
 ## 步驟
 
@@ -70,6 +82,8 @@
 
    不需要另外給權限參數，因為 `allowed-tools` 已核准 `Edit(CHANGELOG.md)`。
 
+   > Windows：在 PowerShell 直接執行上面的指令即可。若在 Git Bash 執行，請先 `export MSYS_NO_PATHCONV=1`，否則 `/changelog` 會被改寫成路徑，Skill 不會觸發，寫檔會出現在 `permission_denials`。
+
 3. 對照實驗：還原 CHANGELOG.md（`git checkout CHANGELOG.md`），改用一般句子：
 
    ```bash
@@ -77,6 +91,8 @@
    ```
 
    因為 `disable-model-invocation: true`，模型不會用這個 Skill，而是自己跑 git 指令；寫檔時也沒有 Skill 的預先核准，非互動模式會被拒絕。
+
+   > Windows：模型可能改用 PowerShell 工具執行 git，這些呼叫同樣沒有預先核准，會和 Edit 一起出現在 `permission_denials`。這正好對照出 Skill 用 `` !`指令` `` 在載入時取資料的好處：不必再請求任何工具權限。
 
 ### Part 2：Claude Code 的 `diff-risk`（讓模型自己挑）
 
@@ -103,7 +119,13 @@
    claude -p "我改了什麼？這些修改可以提交了嗎？" --allowedTools "Skill(diff-risk)" --output-format stream-json --verbose
    ```
 
-   在輸出中找 `"name":"Skill"`，確認模型選用了 diff-risk。非互動模式下，呼叫 Skill 本身也需要核准，所以要加 `--allowedTools "Skill(diff-risk)"`；互動模式會跳出詢問。
+   在輸出中找 `"name":"Skill"`，確認模型選用了 diff-risk。Windows PowerShell 可以直接過濾：
+
+   ```powershell
+   claude -p "我改了什麼？這些修改可以提交了嗎？" --allowedTools "Skill(diff-risk)" --output-format stream-json --verbose | Select-String '"name":"Skill"'
+   ```
+
+   （macOS／Linux 用 `| grep '"name":"Skill"'`。）非互動模式下，呼叫 Skill 本身也需要核准，所以要加 `--allowedTools "Skill(diff-risk)"`；互動模式會跳出詢問。
 
 ### Part 3：Codex 版本
 
@@ -113,8 +135,12 @@
    .agents/skills/changelog/
    ├── SKILL.md                  frontmatter 必填 name 與 description
    ├── agents/openai.yaml        policy.allow_implicit_invocation: false
-   └── scripts/commits_since_tag.sh
+   └── scripts/
+       ├── commits_since_tag.sh    macOS／Linux
+       └── commits_since_tag.ps1   Windows（PowerShell）
    ```
+
+   Codex 在 Windows 以 PowerShell 執行指令，`bash` 可能是 WSL 或不存在，所以 SKILL.md 要分平台寫清楚該跑哪個腳本（參考答案已示範）。
 
    Codex 的 Skill 沒有 `` !`指令` `` 與 `$0` 這類替換，所以：
    - 把「取得 commit」寫成 `scripts/` 裡的腳本，在 SKILL.md 指示 Codex 執行它。
@@ -136,7 +162,7 @@
    codex "我改了什麼？這些修改可以提交了嗎？"
    ```
 
-   注意 `$changelog` 要用單引號，否則 shell 會把 `$changelog` 當成變數。
+   注意 `$changelog` 要用單引號，否則 shell 會把 `$changelog` 當成變數（bash 與 PowerShell 都一樣）。
    互動模式下也可以先輸入 `$` 從清單挑選。
 
 ## 觀察重點

@@ -7,6 +7,7 @@ DEST="${1:-./invoice-tool}"
 mkdir -p "$DEST" && cd "$DEST"
 g() { git -c user.email=lab@example.com -c user.name=lab "$@"; }
 git init -q -b main
+git config core.autocrlf false   # Windows（Git Bash）：保持 LF，避免 CRLF 警告
 cat > invoice.py <<'PY'
 """發票工具：計算含稅金額。"""
 TAX_RATE = 0.05

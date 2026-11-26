@@ -13,6 +13,16 @@
 6. `codex exec "我改了什麼？"` → 請求的 `<skills_instructions>` 列出 diff-risk（含中文描述），未列出 changelog（`allow_implicit_invocation: false` 生效）。
 7. `codex exec '$changelog v1.2.0 2026-11-01'` → 請求中多一則 user 訊息 `<skill><name>changelog</name><path>…/SKILL.md</path>…`，含 SKILL.md 全文。
 
+## Windows 驗證（2026-11-26）
+環境：Windows 10、Windows PowerShell 5.1、Git for Windows、Claude Code 2.1.332（真實模型）；Codex 未安裝。
+1. `make_repo.ps1` 建出的四個檔案與 `make_repo.sh`（Git Bash）逐位元組相同，commit 訊息與 `git diff HEAD` 也相同。
+2. Git Bash 未設 `MSYS_NO_PATHCONV=1` 時，`claude -p "/changelog v1.2.0 2026-11-01"` 收到的是 `C:/Program Files/Git/changelog …`，Skill 未觸發，Edit 被拒。設定後正常。
+3. PowerShell 執行 `/changelog v1.2.0 2026-11-01` → 新增 v1.2.0 段落（新功能 1／修正 1／文件與測試 3），`permission_denials` 為空，未建立 commit 或標籤。
+4. PowerShell 執行「幫我寫 v1.2.0 的更新紀錄」→ 0 次 Skill 呼叫；`permission_denials` 為 PowerShell、PowerShell、Edit；CHANGELOG.md 未變更。
+5. PowerShell 執行 diff-risk 指令並以 `Select-String '"name":"Skill"'` 過濾 → 找到 `"name":"Skill","input":{"skill":"diff-risk"}`，指出寫死金鑰（高）與拿掉負數檢查（中）。
+6. `commits_since_tag.ps1` 輸出 `最新標籤：v1.1.0` 與 5 筆 commit，UTF-8 編碼正確。
+
 ## 尚未驗證
+- Windows 上真實 Codex 執行 `$changelog`（是否選用 `commits_since_tag.ps1`）。
 - 真實 GPT 模型執行 `$changelog` 與 diff-risk 的結果。
 - 互動模式下 `/changelog` 的 `argument-hint` 顯示畫面。
