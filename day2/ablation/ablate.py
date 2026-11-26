@@ -39,8 +39,11 @@ def run_case(client, system, question, truncate, max_rounds):
         results = []
         for block in resp.content:
             if block.type == "tool_use":
+                # encoding 指定 UTF-8：Windows 預設用 cp950 解碼，遇到中文輸出會中斷
                 out = subprocess.run(block.input["command"], shell=True,
-                                     capture_output=True, text=True, timeout=60)
+                                     capture_output=True, text=True, timeout=60,
+                                     encoding="utf-8", errors="replace",
+                                     env={**os.environ, "PYTHONIOENCODING": "utf-8"})
                 text = out.stdout + out.stderr
                 if truncate > 0:
                     text = text[-truncate:]

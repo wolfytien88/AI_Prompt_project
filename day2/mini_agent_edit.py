@@ -1,18 +1,28 @@
 """實作 4 參考版：mini_agent.py 加上宣告式 read_file 與 edit_file 工具（含過期檢查）。
 
 用法：在要修的專案資料夾內執行
-    python3 ../mini_agent_edit.py
+    python3 ../mini_agent_edit.py      （Windows：python ..\\mini_agent_edit.py）
 """
-import anthropic, subprocess
+import os, sys, subprocess
+
+import anthropic
 
 from edit_tool import read_file, edit_file
+
+# Windows：shell=True 走 cmd.exe，python3 通常是 Microsoft Store 空殼；子程序輸出一律用 UTF-8 解讀
+IS_WINDOWS = os.name == "nt"
+PY = "python" if IS_WINDOWS else "python3"
+SHELL_NOTE = "（Windows cmd.exe：請用 dir、type 等指令，Python 請用 python 而非 python3）" if IS_WINDOWS else ""
+CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")   # 主控台是 cp950 時，印不出的字元改成 ? 而不是中斷
 
 client = anthropic.Anthropic()
 MODEL = "claude-sonnet-5-5"  # 依上課當下可用的模型調整
 tools = [
     {
         "name": "bash",
-        "description": "在專案目錄執行一個 shell 指令（執行測試、列出檔案），回傳輸出。修改檔案請用 edit_file。",
+        "description": "在專案目錄執行一個 shell 指令（執行測試、列出檔案），回傳輸出。修改檔案請用 edit_file。" + SHELL_NOTE,
         "input_schema": {"type": "object",
                          "properties": {"command": {"type": "string"}},
                          "required": ["command"]},
@@ -41,7 +51,8 @@ def run_tool(name, args):
     try:
         if name == "bash":
             out = subprocess.run(args["command"], shell=True,
-                                 capture_output=True, text=True, timeout=60)
+                                 capture_output=True, text=True, timeout=60,
+                                 encoding="utf-8", errors="replace", env=CHILD_ENV)
             return (out.stdout + out.stderr)[-5000:]
         if name == "read_file":
             return read_file(args["path"])[-20000:]
@@ -54,7 +65,7 @@ def run_tool(name, args):
 
 
 def main():
-    messages = [{"role": "user", "content": "執行 python3 -m pytest -q，找出失敗原因並修好。只能修改 shop/ 底下的程式，不要改測試。"}]
+    messages = [{"role": "user", "content": f"執行 {PY} -m pytest -q，找出失敗原因並修好。只能修改 shop/ 底下的程式，不要改測試。"}]
     while True:
         resp = client.messages.create(model=MODEL, max_tokens=4096,
                                       tools=tools, messages=messages)
