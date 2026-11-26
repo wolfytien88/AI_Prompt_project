@@ -14,6 +14,11 @@ _clients = {}
 def _claude():
     if "claude" not in _clients:
         import anthropic
+        if not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+            raise RuntimeError(
+                "未設定 Claude API 憑證。請先設定 ANTHROPIC_API_KEY，"
+                "或啟動 Mock 並設定 ANTHROPIC_API_KEY=x。"
+            )
         _clients["claude"] = anthropic.Anthropic()
     return _clients["claude"]
 
@@ -21,6 +26,11 @@ def _claude():
 def _openai():
     if "openai" not in _clients:
         from openai import OpenAI
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise RuntimeError(
+                "未設定 OpenAI API 憑證。請先設定 OPENAI_API_KEY，"
+                "或啟動 Mock 並設定 OPENAI_API_KEY=x。"
+            )
         _clients["openai"] = OpenAI()
     return _clients["openai"]
 

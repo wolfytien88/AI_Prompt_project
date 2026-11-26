@@ -73,6 +73,9 @@
    claude -p "把訂單 O-1005 的狀態改成 shipped" --allowedTools "mcp__orders__query_orders"
    ```
 
+   ```bash
+   claude -p "把訂單 O-1005 的狀態改成 shipped，並確認結果" --allowedTools "mcp__orders__query_orders,mcp__orders__update_order_status"
+   ```
    寫入工具沒有被核准，非互動模式直接拒絕，訂單不會改變。
 
 6. **改成專案範圍**，讓同組的人共用。先移除個人設定（`claude mcp remove orders -s local`），在專案根目錄建立 `.mcp.json`：

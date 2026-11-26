@@ -11,18 +11,25 @@ tools = [{
 }]
 messages = [{"role": "user", "content": "執行 pytest，找出失敗原因並修好"}]
 
+rounds, input_tokens, output_tokens = 0, 0, 0
 while True:
     resp = client.messages.create(model=MODEL, max_tokens=4096,
                                   tools=tools, messages=messages)
+    rounds += 1
+    input_tokens += resp.usage.input_tokens
+    output_tokens += resp.usage.output_tokens
     messages.append({"role": "assistant", "content": resp.content})
     if resp.stop_reason != "tool_use":
         break  # 模型不再呼叫工具 = 完成
     results = []
     for block in resp.content:
         if block.type == "tool_use":
+            print(f"[第 {rounds} 輪] $ {block.input['command']}")
             out = subprocess.run(block.input["command"], shell=True,
-                                 capture_output=True, text=True, timeout=60)
+                                 capture_output=True, text=True, timeout=60,
+                                 encoding="utf-8", errors="replace")
             results.append({"type": "tool_result", "tool_use_id": block.id,
                             "content": (out.stdout + out.stderr)[-5000:]})
     messages.append({"role": "user", "content": results})
 print("".join(b.text for b in resp.content if b.type == "text"))
+print(f"輪數：{rounds}　輸入 Token：{input_tokens}　輸出 Token：{output_tokens}")
